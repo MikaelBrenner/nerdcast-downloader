@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"io"
 	"log"
+	myutils "nerdcast-downloader/my-utils"
 	"net/http"
+	"strings"
 
 	"golang.org/x/net/html"
 )
 
 func main() {
-	resp, err := http.Get("https://jovemnerd.com.br/nerdcast/?search=&page=1")
+	resp, err := http.Get("https://jovemnerd.com.br/feed-nerdcast/")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,12 +32,16 @@ func getLinks(body io.Reader) []string {
 		case html.ErrorToken:
 			//todo: links list shoudn't contain duplicates
 			return links
-		case html.StartTagToken, html.EndTagToken:
+		case html.SelfClosingTagToken:
 			token := z.Token()
-			if "a" == token.Data {
+			if "enclosure" == token.Data {
 				for _, attr := range token.Attr {
-					if attr.Key == "href" {
-						links = append(links, attr.Val)
+					if attr.Key == "url" {
+						if strings.HasPrefix(attr.Val, "https://nerdcast.jovemnerd.com.br/nerd") {
+							if !myutils.Contains(links, attr.Val) {
+								links = append(links, attr.Val)
+							}
+						}
 					}
 
 				}
